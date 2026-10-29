@@ -97,14 +97,16 @@
       display: block;
       width: 100%;
       height: auto;
-      object-fit: contain;
     }
 
     #videoOCR {
       max-height: 65vh;
+      object-fit: contain;
     }
 
     #imagemCapturada {
+      max-height: 65vh;
+      object-fit: contain;
       background: #202124;
     }
 
@@ -170,8 +172,8 @@
   <h2>Leitor BPM</h2>
 
   <p class="instrucao">
-    Posicione a etiqueta na câmera e enquadre a região do BPM
-    dentro da moldura verde. Mantenha a imagem nítida e toque em
+    Posicione a etiqueta na câmera e enquadre a região do número
+    na moldura verde. Mantenha a etiqueta nítida e toque em
     <strong>Capturar e ler BPM</strong>.
   </p>
 
@@ -230,8 +232,8 @@
         autocomplete="off">
 
       <p class="nota">
-        Confira os dígitos. Se necessário, corrija o número
-        manualmente ou faça uma nova captura.
+        Confira todos os dígitos. Se o reconhecimento estiver
+        incorreto, corrija o número manualmente ou tente outra captura.
       </p>
 
       <button id="confirmarOCR" onclick="confirmarOCR()">
@@ -302,15 +304,9 @@
       streamOCR = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
-          facingMode: {
-            ideal: "environment"
-          },
-          width: {
-            ideal: 1280
-          },
-          height: {
-            ideal: 720
-          }
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
         }
       });
 
@@ -337,7 +333,7 @@
       elemento("bpmOCR").value = "";
 
       status.textContent =
-        "Câmera ativa. Enquadre o BPM e capture a imagem.";
+        "Câmera ativa. Enquadre a etiqueta e capture a imagem.";
 
     } catch (erro) {
       status.textContent =
@@ -352,21 +348,15 @@
   }
 
   async function obterWorkerOCR() {
-    if (workerOCR) {
-      return workerOCR;
-    }
+    if (workerOCR) return workerOCR;
 
     elemento("mensagemOCR").textContent =
-      "Preparando o leitor pela primeira vez. Aguarde...";
+      "Preparando o reconhecimento na primeira utilização...";
 
-    // Inicializa o OCR uma única vez e reutiliza nas próximas capturas.
     workerOCR = await Tesseract.createWorker("eng");
 
     await workerOCR.setParameters({
-      // A etiqueta só precisa ser lida numericamente.
       tessedit_char_whitelist: "0123456789",
-
-      // Trata a região capturada como texto esparso.
       tessedit_pageseg_mode: "11"
     });
 
@@ -387,7 +377,7 @@
       !video.videoWidth
     ) {
       status.textContent =
-        "A câmera ainda não está pronta. Aguarde um instante e tente novamente.";
+        "A câmera ainda não está pronta. Aguarde e tente novamente.";
       return;
     }
 
@@ -395,71 +385,127 @@
     botao.disabled = true;
 
     const minhaSessao = sessaoOCR;
+    let bitmap = null;
 
     try {
-      status.textContent = "Capturando a região da etiqueta...";
+      status.textContent = "Capturando fotografia...";
 
-      const larguraOriginal = video.videoWidth;
-      const alturaOriginal = video.videoHeight;
+      const faixa = streamOCR.getVideoTracks()[0];
 
       /*
-       * Recorta a região correspondente à moldura verde.
-       * Isso evita processar áreas desnecessárias da imagem.
+       * Tenta obter uma fotografia real do sensor.
+       * Se não houver suporte, usa o quadro do vídeo.
        */
-      const x = Math.round(larguraOriginal * 0.05);
-      const y = Math.round(alturaOriginal * 0.15);
-      const larguraCorte = Math.round(larguraOriginal * 0.90);
-      const alturaCorte = Math.round(alturaOriginal * 0.70);
+      if ("ImageCapture" in window && faixa) {
+        try {
+          const capturador = new ImageCapture(faixa);
+          const foto = await capturador.takePhoto();
 
-      // Ampliação moderada para preservar os detalhes dos dígitos.
-      const escala = 1.5;
+          bitmap = await createImageBitmap(foto);
+        } catch (erroFoto) {
+          console.warn(
+            "Fotografia direta indisponível; usando vídeo.",
+            erroFoto
+          );
+        }
+      }
 
-      canvas.width = Math.round(larguraCorte * escala);
-      canvas.height = Math.round(alturaCorte * escala);
+      if (minhaSessao !== sessaoOCR) {
+        if (bitmap) bitmap.close();
+        return;
+      }
 
-      const contexto = canvas.getContext("2d", {
-        willReadFrequently: true
-      });
+      const largura = bitmap
+        ? bitmap.width
+        : video.videoWidth;
 
-      contexto.filter = "grayscale(1) contrast(1.4)";
+      const altura = bitmap
+        ? bitmap.height
+        : video.videoHeight;
 
-      contexto.drawImage(
-        video,
+      // Preserva a resolução da imagem capturada.
+      canvas.width = largura;
+      canvas.height = altura;
+
+      const contexto = canvas.getContext("2d");
+
+      contexto.filter = "none";
+
+      if (bitmap) {
+        contexto.drawImage(bitmap, 0, 0);
+        bitmap.close();
+        bitmap = null;
+      } else {
+        contexto.drawImage(video, 0, 0, largura, altura);
+      }
+
+      video.hidden = true;
+      canvas.hidden = false;
+
+      elemento("moldura").hidden = true;
+      elemento("legendaMoldura").hidden = true;
+      elemento("capturarOCR").hidden = true;
+      elemento("tentarNovamente").hidden = false;
+      elemento("painelResultado").hidden = true;
+
+      status.textContent =
+        "Fotografia capturada. Preparando imagem para leitura...";
+
+      /*
+       * Recorta a região indicada pela moldura verde.
+       * A fotografia original continua preservada no canvas visível.
+       */
+      const x = Math.round(largura * 0.05);
+      const y = Math.round(altura * 0.15);
+      const larguraCorte = Math.round(largura * 0.90);
+      const alturaCorte = Math.round(altura * 0.70);
+
+      const canvasOCR = document.createElement("canvas");
+
+      // Limita a imagem de trabalho para evitar processamento excessivo.
+      const maiorLado = Math.max(larguraCorte, alturaCorte);
+      const escala = Math.min(1.5, 2200 / maiorLado);
+
+      canvasOCR.width = Math.max(
+        1,
+        Math.round(larguraCorte * escala)
+      );
+
+      canvasOCR.height = Math.max(
+        1,
+        Math.round(alturaCorte * escala)
+      );
+
+      const contextoOCR = canvasOCR.getContext("2d");
+
+      contextoOCR.filter = "grayscale(1) contrast(1.5)";
+
+      contextoOCR.drawImage(
+        canvas,
         x,
         y,
         larguraCorte,
         alturaCorte,
         0,
         0,
-        canvas.width,
-        canvas.height
+        canvasOCR.width,
+        canvasOCR.height
       );
 
-      contexto.filter = "none";
+      contextoOCR.filter = "none";
 
-      // Mostra a região capturada ampliada.
-      video.hidden = true;
-      canvas.hidden = false;
-
-      elemento("moldura").hidden = true;
-      elemento("legendaMoldura").hidden = true;
-
-      elemento("capturarOCR").hidden = true;
-      elemento("tentarNovamente").hidden = false;
-      elemento("painelResultado").hidden = true;
-
-      status.textContent = "Reconhecendo os números...";
+      status.textContent =
+        "Reconhecendo os números da etiqueta...";
 
       const worker = await obterWorkerOCR();
 
       if (minhaSessao !== sessaoOCR) return;
 
-      const resultado = await worker.recognize(canvas);
+      const resultado = await worker.recognize(canvasOCR);
 
       if (minhaSessao !== sessaoOCR) return;
 
-      const texto = resultado.data.text || "";
-      const bpm = extrairBPM(texto);
+      const bpm = extrairBPM(resultado.data.text || "");
 
       elemento("painelResultado").hidden = false;
 
@@ -467,19 +513,21 @@
         elemento("bpmOCR").value = bpm;
 
         status.textContent =
-          "Número identificado. Confira o BPM antes de pesquisar.";
+          "Número identificado. Confira todos os dígitos antes de pesquisar.";
       } else {
         elemento("bpmOCR").value = "";
 
         status.textContent =
           "Não foi possível identificar os dígitos. " +
-          "Tente outra captura com a etiqueta mais próxima, nítida e bem iluminada.";
+          "Tente novamente com a etiqueta mais próxima, nítida e bem iluminada.";
       }
 
     } catch (erro) {
+      if (bitmap) bitmap.close();
+
       if (minhaSessao === sessaoOCR) {
         status.textContent =
-          "Erro durante o reconhecimento: " +
+          "Erro na captura ou leitura: " +
           (erro.message || String(erro));
 
         elemento("tentarNovamente").hidden = false;
@@ -495,20 +543,13 @@
 
   function extrairBPM(textoOCR) {
     /*
-     * Como a etiqueta contém somente um número,
-     * não precisamos reconhecer o rótulo BPM.
-     *
-     * O OCR está configurado para priorizar dígitos.
-     * Retiramos espaços e caracteres não numéricos do resultado.
+     * A etiqueta contém apenas uma informação numérica:
+     * o BPM. Não é necessário reconhecer as letras do rótulo.
      */
     const somenteDigitos = String(textoOCR || "")
       .replace(/\D/g, "");
 
-    if (!somenteDigitos) {
-      return "";
-    }
-
-    return somenteDigitos;
+    return somenteDigitos || "";
   }
 
   function tentarNovamenteOCR() {
@@ -542,7 +583,6 @@
   function confirmarOCR() {
     const campo = elemento("bpmOCR");
     const status = elemento("mensagemOCR");
-
     const bpm = campo.value.trim();
 
     if (!/^\d+$/.test(bpm)) {
