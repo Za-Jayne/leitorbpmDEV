@@ -4,286 +4,297 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#142D4E">
+  <meta name="theme-color" content="#142d4e">
   <title>Leitor BPM</title>
 
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
     :root {
-      --navy: #142D4E;
-      --blue: #1672CE;
-      --green: #168044;
-      --border: #D9E2ED;
-      --bg: #F3F6FA;
+      --marinho: #142d4e;
+      --marinho2: #203f65;
+      --verde: #20c878;
+      --fundo: #f3f5f8;
+      --texto: #202b3c;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
-      padding: 12px;
-      font-family: Arial, Helvetica, sans-serif;
-      color: #26364A;
-      background: var(--bg);
-    }
-
-    .container {
-      width: 100%;
-      max-width: 800px;
-      margin: auto;
       padding: 18px;
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      box-shadow: 0 4px 18px #142D4E12;
+      background: var(--fundo);
+      color: var(--texto);
+      font-family: Arial, Helvetica, sans-serif;
     }
 
-    h1 {
-      margin: 0 0 8px;
-      font-size: 26px;
-      color: var(--navy);
+    .app {
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
     }
 
-    .sub {
-      margin: 0 0 18px;
-      line-height: 1.5;
-      color: #586A80;
+    .cabecalho {
+      padding: 18px;
+      margin-bottom: 16px;
+      color: white;
+      background: var(--marinho);
+      border-radius: 14px;
     }
 
-    .panel {
-      margin-top: 16px;
-      padding: 12px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: #FBFCFE;
+    .cabecalho h1 {
+      margin: 0 0 7px;
+      font-size: 23px;
     }
 
-    .camera {
+    .cabecalho p {
+      margin: 0;
+      color: #d8e4f2;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .painel {
+      padding: 16px;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 3px 14px #142d4e12;
+    }
+
+    .camera-box {
       position: relative;
       width: 100%;
       aspect-ratio: 4 / 3;
       overflow: hidden;
-      border-radius: 8px;
-      background: #101820;
+      background: #10151c;
+      border-radius: 12px;
     }
 
-    #video, #photo {
-      position: absolute;
-      inset: 0;
+    #video,
+    #photo {
+      display: block;
       width: 100%;
       height: 100%;
-      display: block;
-    }
-
-    #video {
-      object-fit: cover;
+      object-fit: contain;
+      background: #10151c;
     }
 
     #photo {
-      object-fit: contain;
-      background: #101820;
-      z-index: 2;
+      position: absolute;
+      inset: 0;
     }
 
-    .frame {
+    .moldura {
       position: absolute;
-      z-index: 3;
       left: 5%;
       top: 8%;
       width: 90%;
       height: 72%;
-      border: 2px solid #20C76B;
+      border: 3px solid var(--verde);
       border-radius: 8px;
-      box-shadow: 0 0 0 999px #00000018;
       pointer-events: none;
+      box-shadow: 0 0 0 999px #00000018;
     }
 
-    .frame-label {
-      position: absolute;
-      z-index: 4;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 7px 10px;
-      border-radius: 6px;
-      background: #142D4EDB;
-      color: white;
+    .orientacao {
+      margin: 12px 0 16px;
+      color: #536174;
       font-size: 13px;
-      white-space: nowrap;
-      pointer-events: none;
+      line-height: 1.5;
+    }
+
+    .botoes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
     }
 
     button {
-      display: block;
-      width: 100%;
-      min-height: 48px;
-      margin: 7px 0;
-      padding: 12px;
+      min-height: 46px;
+      padding: 12px 14px;
       border: 0;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: bold;
+      border-radius: 9px;
+      font-size: 15px;
+      font-weight: 700;
       cursor: pointer;
     }
 
     button:disabled {
-      opacity: .55;
+      opacity: 0.55;
       cursor: wait;
     }
 
-    .blue { background: var(--blue); color: white; }
-    .green { background: var(--green); color: white; }
-    .gray {
-      background: #E9EEF4;
-      color: #34445A;
-      border: 1px solid var(--border);
-    }
-    .dark { background: #526171; color: white; }
-
-    .status {
-      margin: 12px 0;
-      padding: 12px;
-      border-radius: 8px;
-      background: #EAF3FD;
-      color: var(--navy);
-      line-height: 1.5;
-      overflow-wrap: anywhere;
+    .primario {
+      color: white;
+      background: var(--marinho);
     }
 
-    .status.error {
-      background: #FFF0EF;
-      color: #B42318;
+    .secundario {
+      color: var(--marinho);
+      background: #e7edf4;
     }
 
-    .status.success {
-      background: #EAF7EF;
-      color: #176B39;
+    .verde {
+      width: 100%;
+      margin-top: 12px;
+      color: white;
+      background: #168653;
     }
 
-    label {
+    .campo {
+      margin-top: 18px;
+    }
+
+    .campo label {
       display: block;
-      margin: 14px 0 7px;
-      font-weight: bold;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 700;
     }
 
-    input {
-      display: block;
+    #bpmInput {
       width: 100%;
       min-height: 48px;
       padding: 12px;
-      border: 1px solid #BFCddd;
-      border-radius: 8px;
+      border: 1px solid #cbd4df;
+      border-radius: 9px;
       font-size: 21px;
-      color: var(--navy);
+      letter-spacing: 1px;
     }
 
-    .help {
+    #status {
+      min-height: 42px;
+      margin-top: 14px;
+      padding: 11px;
+      border-radius: 8px;
+      background: #edf1f6;
+      color: #34445a;
       font-size: 13px;
-      line-height: 1.5;
-      color: #617187;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
     }
 
-    .hidden { display: none !important; }
+    .hidden {
+      display: none !important;
+    }
 
-    @media (max-width: 520px) {
-      body { padding: 8px; }
-      .container { padding: 13px; }
-      h1 { font-size: 23px; }
-      .panel { padding: 9px; }
+    @media (max-width: 360px) {
+      body {
+        padding: 10px;
+      }
+
+      .painel {
+        padding: 12px;
+      }
+
+      .botoes {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 
 <body>
-  <main class="container">
-    <h1>📷 Leitor BPM</h1>
+  <main class="app">
+    <header class="cabecalho">
+      <h1>Leitor BPM</h1>
+      <p>Capture a etiqueta patrimonial e confira o número reconhecido antes de consultar.</p>
+    </header>
 
-    <p class="sub">
-      Enquadre a etiqueta inteira. A imagem será congelada no momento
-      da captura e analisada automaticamente.
-    </p>
+    <section class="painel">
+      <div class="camera-box" id="cameraBox">
+        <video
+          id="video"
+          autoplay
+          muted
+          playsinline
+        ></video>
 
-    <section class="panel">
-      <button id="openCamera" class="green" type="button">
-        Abrir câmera
-      </button>
+        <canvas id="photo" class="hidden"></canvas>
 
-      <div id="cameraControls" class="hidden">
-        <div class="camera" id="cameraBox">
-          <video id="video" autoplay playsinline muted></video>
-          <canvas id="photo" class="hidden"></canvas>
-          <div class="frame"></div>
-          <div class="frame-label">Enquadre a etiqueta inteira</div>
-        </div>
-
-        <p class="help">
-          Mantenha o número BPM legível e acima do código de barras.
-          Se a imagem perder o foco, afaste um pouco o celular.
-        </p>
-
-        <button id="capture" class="blue" type="button">
-          Capturar e ler BPM
-        </button>
-
-        <button id="retry" class="gray" type="button">
-          Nova captura
-        </button>
+        <div class="moldura" id="moldura"></div>
       </div>
 
-      <div id="status" class="status">
-        Abra a câmera para começar.
-      </div>
-    </section>
-
-    <section class="panel">
-      <h2 style="color:#142D4E;font-size:21px;margin-top:0">
-        Resultado da leitura
-      </h2>
-
-      <label for="bpm">BPM reconhecido:</label>
-      <input id="bpm" type="text" inputmode="numeric"
-             autocomplete="off" placeholder="Aguardando leitura">
-
-      <p class="help">
-        Confira o número antes de pesquisar. Você também pode digitá-lo
-        manualmente caso a etiqueta esteja danificada ou desfocada.
+      <p class="orientacao">
+        Enquadre a etiqueta inteira dentro da moldura verde. Mantenha o celular firme,
+        aguarde o foco e toque em <strong>Capturar etiqueta</strong>.
       </p>
 
-      <button id="search" class="green" type="button">
-        Confirmar BPM e pesquisar
-      </button>
+      <div class="botoes">
+        <button type="button" id="openBtn" class="primario">
+          Abrir câmera
+        </button>
 
-      <button id="closeCamera" class="dark" type="button">
-        Fechar câmera
-      </button>
+        <button type="button" id="captureBtn" class="primario" disabled>
+          Capturar etiqueta
+        </button>
+
+        <button type="button" id="retryBtn" class="secundario hidden">
+          Capturar novamente
+        </button>
+
+        <button type="button" id="closeBtn" class="secundario hidden">
+          Fechar câmera
+        </button>
+      </div>
+
+      <div class="campo">
+        <label for="bpmInput">BPM reconhecido</label>
+        <input
+          id="bpmInput"
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="O BPM aparecerá aqui"
+        >
+
+        <button type="button" id="searchBtn" class="verde">
+          Confirmar e consultar
+        </button>
+      </div>
+
+      <div id="status" role="status" aria-live="polite">
+        Toque em “Abrir câmera” para começar.
+      </div>
     </section>
   </main>
 
   <script>
     "use strict";
 
+    // Endereço da aplicação Consulta Patrimonial.
     const APP_URL =
       "https://script.google.com/macros/s/AKfycbwtc7P8xFefVvwFSMQHxDcGs-K4aWwbBwTrdyI5qH2JmoNIIhK1t5DbpdecyuXexLoVuQ/exec";
 
-    const $ = id => document.getElementById(id);
-
-    const video = $("video");
-    const photo = $("photo");
-    const cameraBox = $("cameraBox");
-    const cameraControls = $("cameraControls");
-    const statusBox = $("status");
-    const bpmInput = $("bpm");
+    const video = document.getElementById("video");
+    const photo = document.getElementById("photo");
+    const cameraBox = document.getElementById("cameraBox");
+    const moldura = document.getElementById("moldura");
+    const openBtn = document.getElementById("openBtn");
+    const captureBtn = document.getElementById("captureBtn");
+    const retryBtn = document.getElementById("retryBtn");
+    const closeBtn = document.getElementById("closeBtn");
+    const searchBtn = document.getElementById("searchBtn");
+    const bpmInput = document.getElementById("bpmInput");
+    const statusBox = document.getElementById("status");
 
     let stream = null;
     let worker = null;
-    let workerPromise = null;
-    let busy = false;
     let captured = false;
+    let processing = false;
 
-    function setStatus(message, type = "") {
+    function setStatus(message) {
       statusBox.textContent = message;
-      statusBox.className = "status" + (type ? " " + type : "");
+    }
+
+    function setBusy(busy) {
+      processing = busy;
+      captureBtn.disabled = busy || !stream || captured;
+      openBtn.disabled = busy;
+      retryBtn.disabled = busy;
+      searchBtn.disabled = busy;
     }
 
     function stopCamera() {
@@ -291,23 +302,29 @@
         stream.getTracks().forEach(track => track.stop());
         stream = null;
       }
+
+      video.pause();
       video.srcObject = null;
+      captureBtn.disabled = true;
     }
 
     async function openCamera() {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setStatus(
-          "A câmera não está disponível. Abra o aplicativo pelo endereço HTTPS do GitHub Pages.",
-          "error"
-        );
-        return;
-      }
+      if (processing) return;
 
-      $("openCamera").disabled = true;
+      stopCamera();
+      captured = false;
+      bpmInput.value = "";
+
+      photo.classList.add("hidden");
+      video.classList.remove("hidden");
+      moldura.classList.remove("hidden");
+      retryBtn.classList.add("hidden");
+      closeBtn.classList.remove("hidden");
+      openBtn.classList.add("hidden");
+
+      setStatus("Solicitando acesso à câmera...");
 
       try {
-        setStatus("Abrindo câmera...");
-
         stream = await navigator.mediaDevices.getUserMedia({
           audio: false,
           video: {
@@ -320,317 +337,381 @@
         video.srcObject = stream;
         await video.play();
 
-        cameraBox.style.aspectRatio =
-          video.videoWidth + " / " + video.videoHeight;
+        await new Promise(resolve => {
+          if (video.videoWidth > 0) {
+            resolve();
+          } else {
+            video.addEventListener("loadedmetadata", resolve, { once: true });
+          }
+        });
 
-        video.classList.remove("hidden");
-        photo.classList.add("hidden");
-        cameraControls.classList.remove("hidden");
-        $("openCamera").classList.add("hidden");
-
-        captured = false;
+        captureBtn.disabled = false;
         setStatus("Câmera ativa. Enquadre a etiqueta e capture.");
-      } catch (e) {
-        console.error(e);
-        const message = e.name === "NotAllowedError"
-          ? "Permissão da câmera negada. Autorize a câmera nas configurações do navegador."
-          : "Não foi possível abrir a câmera: " + (e.message || e.name);
+      } catch (error) {
+        stopCamera();
+        openBtn.classList.remove("hidden");
+        closeBtn.classList.add("hidden");
 
-        setStatus(message, "error");
-      } finally {
-        $("openCamera").disabled = false;
+        let message = "Não foi possível abrir a câmera.";
+
+        if (error.name === "NotAllowedError" ||
+            error.name === "PermissionDeniedError") {
+          message += " Verifique a permissão de câmera do Chrome.";
+        } else if (error.name === "NotFoundError") {
+          message += " Nenhuma câmera compatível foi encontrada.";
+        } else {
+          message += " " + (error.message || "Verifique as permissões do navegador.");
+        }
+
+        setStatus(message);
       }
     }
 
-    /*
-     * Tenta tirar uma fotografia nativa de alta resolução.
-     * Se o navegador não suportar ImageCapture, usa o quadro do vídeo.
-     */
+    // Converte o Blob da câmera em uma imagem utilizável pelo canvas.
+    async function blobToImageSource(blob) {
+      if (typeof createImageBitmap === "function") {
+        try {
+          return await createImageBitmap(blob);
+        } catch (error) {
+          console.warn("createImageBitmap indisponível; tentando Image.", error);
+        }
+      }
+
+      return new Promise((resolve, reject) => {
+        const objectUrl = URL.createObjectURL(blob);
+        const image = new Image();
+
+        image.onload = () => {
+          URL.revokeObjectURL(objectUrl);
+          resolve(image);
+        };
+
+        image.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error("Não foi possível decodificar a foto da câmera."));
+        };
+
+        image.src = objectUrl;
+      });
+    }
+
     async function takePhoto() {
       if (!video.videoWidth || !video.videoHeight) {
         throw new Error("A câmera ainda não está pronta.");
       }
 
-      let bitmap = null;
+      const ctx = photo.getContext("2d", {
+        willReadFrequently: true
+      });
 
-      try {
-        const track = stream && stream.getVideoTracks()[0];
+      // Primeiro, congela imediatamente o quadro que aparece na tela.
+      // Isso garante uma imagem de segurança caso a foto de alta resolução falhe.
+      photo.width = video.videoWidth;
+      photo.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, photo.width, photo.height);
 
-        if (track && "ImageCapture" in window) {
-          const capture = new ImageCapture(track);
-          bitmap = await capture.takePhoto();
-        }
-      } catch (e) {
-        console.warn("Fotografia nativa indisponível; usando vídeo.", e);
-      }
-
-      const ctx = photo.getContext("2d", { willReadFrequently: true });
-
-      if (bitmap) {
-        photo.width = bitmap.width;
-        photo.height = bitmap.height;
-        ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
-        if (bitmap.close) bitmap.close();
-      } else {
-        photo.width = video.videoWidth;
-        photo.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0, photo.width, photo.height);
-      }
-
-      cameraBox.style.aspectRatio = photo.width + " / " + photo.height;
-
-      // A imagem fica congelada antes de iniciar o OCR.
       video.pause();
       video.classList.add("hidden");
       photo.classList.remove("hidden");
-      stopCamera();
-
+      moldura.classList.add("hidden");
       captured = true;
-    }
 
-    /*
-     * O recorte é relativo à moldura, não ao tamanho fixo em pixels.
-     * A parte superior da moldura contém o campo BPM.
-     */
-    function getTextRegion() {
-      const sourceW = photo.width;
-      const sourceH = photo.height;
+      captureBtn.disabled = true;
+      retryBtn.classList.remove("hidden");
 
-      const x = Math.round(sourceW * 0.05);
-      const y = Math.round(sourceH * 0.08);
-      const w = Math.round(sourceW * 0.90);
-      const h = Math.round(sourceH * 0.72 * 0.82);
+      setStatus("Imagem capturada. Preparando a imagem para leitura...");
 
-      const crop = document.createElement("canvas");
-      const scale = Math.min(2, 2600 / Math.max(w, h));
+      // Inicia a foto de alta resolução, quando o navegador oferece suporte.
+      // A imagem congelada acima permanece visível durante esse processo.
+      const track = stream && stream.getVideoTracks()[0];
 
-      crop.width = Math.max(1, Math.round(w * scale));
-      crop.height = Math.max(1, Math.round(h * scale));
+      if (track && "ImageCapture" in window) {
+        let bitmap = null;
 
-      const ctx = crop.getContext("2d", { willReadFrequently: true });
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = "high";
+        try {
+          const capture = new ImageCapture(track);
+          const blob = await capture.takePhoto();
 
-      ctx.drawImage(
-        photo,
-        x, y, w, h,
-        0, 0, crop.width, crop.height
-      );
+          if (!(blob instanceof Blob) || blob.size === 0) {
+            throw new Error("A câmera não retornou uma foto válida.");
+          }
 
-      return crop;
-    }
+          // Correção principal: takePhoto() retorna Blob, não uma imagem
+          // que possa ser passada diretamente ao drawImage().
+          bitmap = await blobToImageSource(blob);
 
-    function preprocess(source) {
-      const canvas = document.createElement("canvas");
-      canvas.width = source.width;
-      canvas.height = source.height;
+          const width = bitmap.width || bitmap.naturalWidth;
+          const height = bitmap.height || bitmap.naturalHeight;
 
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      ctx.drawImage(source, 0, 0);
+          if (!width || !height) {
+            throw new Error("A foto recebida não possui dimensões válidas.");
+          }
 
-      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const p = img.data;
+          photo.width = width;
+          photo.height = height;
 
-      for (let i = 0; i < p.length; i += 4) {
-        const gray =
-          0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2];
+          const photoContext = photo.getContext("2d", {
+            willReadFrequently: true
+          });
 
-        const contrast = Math.max(
-          0, Math.min(255, (gray - 118) * 1.6 + 128)
-        );
-
-        p[i] = p[i + 1] = p[i + 2] = contrast;
+          photoContext.drawImage(bitmap, 0, 0, width, height);
+        } catch (error) {
+          // A imagem congelada do vídeo continua disponível como alternativa.
+          console.warn(
+            "Usando o quadro congelado do vídeo como alternativa.",
+            error
+          );
+        } finally {
+          if (bitmap && typeof bitmap.close === "function") {
+            bitmap.close();
+          }
+        }
       }
 
-      ctx.putImageData(img, 0, 0);
-      return canvas;
+      stopCamera();
+      cameraBox.style.aspectRatio = photo.width + " / " + photo.height;
+
+      setStatus("Imagem congelada. Iniciando reconhecimento do BPM...");
+    }
+
+    // Amplia e melhora o contraste para uma segunda leitura, se necessária.
+    function preprocess(sourceCanvas) {
+      const scale = Math.min(
+        2,
+        2600 / Math.max(sourceCanvas.width, sourceCanvas.height)
+      );
+
+      const result = document.createElement("canvas");
+      result.width = Math.max(1, Math.round(sourceCanvas.width * scale));
+      result.height = Math.max(1, Math.round(sourceCanvas.height * scale));
+
+      const ctx = result.getContext("2d", {
+        willReadFrequently: true
+      });
+
+      ctx.drawImage(sourceCanvas, 0, 0, result.width, result.height);
+
+      const imageData = ctx.getImageData(0, 0, result.width, result.height);
+      const pixels = imageData.data;
+
+      for (let i = 0; i < pixels.length; i += 4) {
+        const gray =
+          0.299 * pixels[i] +
+          0.587 * pixels[i + 1] +
+          0.114 * pixels[i + 2];
+
+        // Contraste moderado, preservando traços finos dos caracteres.
+        const contrasted = Math.max(
+          0,
+          Math.min(255, (gray - 110) * 1.45 + 110)
+        );
+
+        pixels[i] = contrasted;
+        pixels[i + 1] = contrasted;
+        pixels[i + 2] = contrasted;
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      return result;
     }
 
     async function getWorker() {
       if (worker) return worker;
-      if (workerPromise) return workerPromise;
 
-      workerPromise = (async () => {
-        const w = await Tesseract.createWorker("eng", 1);
+      worker = await Tesseract.createWorker("eng", 1, {
+        logger: info => {
+          if (info.status === "recognizing text" &&
+              typeof info.progress === "number") {
+            const percent = Math.round(info.progress * 100);
+            setStatus("Reconhecendo texto da etiqueta... " + percent + "%");
+          }
+        }
+      });
 
-        await w.setParameters({
-          tessedit_pageseg_mode: "11"
-        });
+      await worker.setParameters({
+        preserve_interword_spaces: "1"
+      });
 
-        worker = w;
-        return w;
-      })();
-
-      try {
-        return await workerPromise;
-      } catch (e) {
-        workerPromise = null;
-        throw e;
-      }
+      return worker;
     }
 
-    function findBpmNearLabel(text) {
+    // Procura os dígitos na linha identificada como BPM.
+    // Isso reduz a chance de confundir o código de barras com o patrimônio.
+    function extractBpm(text) {
       const lines = text
         .split(/\r?\n/)
         .map(line => line.trim())
         .filter(Boolean);
 
       for (let i = 0; i < lines.length; i++) {
-        if (/\bB\s*P\s*M\b/i.test(lines[i])) {
-          const current = lines[i].match(/\d+/g) || [];
+        const normalized = lines[i]
+          .toUpperCase()
+          .replace(/[|]/g, "I");
 
-          if (current.length) {
-            return current[current.length - 1];
+        if (!/B\s*[P8]\s*M/.test(normalized)) {
+          continue;
+        }
+
+        // Prioriza os números da própria linha do BPM.
+        const sameLine = lines[i].match(/\d[\d\s.-]{3,}\d/g) || [];
+
+        for (const candidate of sameLine) {
+          const digits = candidate.replace(/\D/g, "");
+          if (digits.length >= 5 && digits.length <= 9) {
+            return digits;
           }
+        }
 
-          // Às vezes o rótulo BPM e o número são lidos em linhas separadas.
-          for (let j = i + 1; j < Math.min(i + 3, lines.length); j++) {
-            const next = lines[j].match(/\d{4,}/g) || [];
-            if (next.length === 1) return next[0];
+        // Se o OCR separou o número na linha seguinte, tenta essa linha.
+        if (i + 1 < lines.length) {
+          const nextLine = lines[i + 1];
+          const nextCandidates = nextLine.match(/\d[\d\s.-]{3,}\d/g) || [];
+
+          for (const candidate of nextCandidates) {
+            const digits = candidate.replace(/\D/g, "");
+            if (digits.length >= 5 && digits.length <= 9) {
+              return digits;
+            }
           }
         }
       }
 
-      return null;
+      return "";
     }
 
-    function numericCandidates(text) {
-      // Mantém cada sequência separada; nunca concatena números.
-      return [...new Set(text.match(/\d{4,}/g) || [])];
-    }
+    async function recognizeBpm() {
+      if (processing) return;
 
-    async function readBpm() {
-      if (busy) return;
-
-      if (!stream) {
-        setStatus("Abra a câmera antes de capturar.", "error");
+      if (!captured || !photo.width || !photo.height) {
+        setStatus("Abra a câmera e capture uma etiqueta primeiro.");
         return;
       }
 
-      busy = true;
-      $("capture").disabled = true;
-      $("retry").disabled = true;
+      setBusy(true);
       bpmInput.value = "";
 
       try {
-        setStatus("Capturando a fotografia...");
-        await takePhoto();
+        const ocr = await getWorker();
 
-        setStatus("Fotografia congelada. Analisando o campo BPM...");
+        setStatus("Lendo o texto da etiqueta...");
+        const firstResult = await ocr.recognize(photo);
+        let bpm = extractBpm(firstResult.data.text || "");
 
-        const crop = getTextRegion();
-        const processed = preprocess(crop);
-        const w = await getWorker();
-
-        // Primeira leitura: procura o texto BPM e o número relacionado.
-        const first = await w.recognize(processed);
-        const text = first.data.text || "";
-        console.log("Texto OCR:", text);
-
-        let result = findBpmNearLabel(text);
-
-        if (!result) {
-          /*
-           * Segunda leitura somente se a primeira não localizar BPM.
-           * Restringe o resultado a sequências numéricas independentes.
-           */
-          setStatus("O campo BPM não foi localizado. Tentando leitura numérica...");
-
-          await w.setParameters({
-            tessedit_char_whitelist: "0123456789",
-            tessedit_pageseg_mode: "11"
-          });
-
-          const second = await w.recognize(processed);
-          const candidates = numericCandidates(second.data.text || "");
-
-          await w.setParameters({
-            tessedit_pageseg_mode: "11"
-          });
-
-          if (candidates.length === 1) {
-            result = candidates[0];
-          } else if (candidates.length > 1) {
-            setStatus(
-              "A fotografia foi capturada, mas há mais de um número possível. Faça nova captura com a etiqueta mais nítida ou digite o BPM.",
-              "error"
-            );
-            return;
-          }
+        // Uma segunda leitura com contraste melhorado só ocorre
+        // quando a primeira não identifica o número associado a BPM.
+        if (!bpm) {
+          setStatus("Melhorando o contraste para tentar identificar o BPM...");
+          const improved = preprocess(photo);
+          const secondResult = await ocr.recognize(improved);
+          bpm = extractBpm(secondResult.data.text || "");
         }
 
-        if (result) {
-          bpmInput.value = result;
+        if (bpm) {
+          bpmInput.value = bpm;
           setStatus(
-            "Leitura concluída. Confira se o número corresponde ao BPM impresso antes de pesquisar.",
-            "success"
+            "BPM identificado: " + bpm +
+            ". Confira o número e toque em “Confirmar e consultar”."
           );
         } else {
           setStatus(
-            "A fotografia foi capturada, mas não consegui reconhecer o BPM. Toque em Nova captura e tente com melhor foco.",
-            "error"
+            "Não consegui identificar com segurança o número ao lado de BPM. " +
+            "Tente capturar novamente, mantendo a etiqueta focada, ou digite o BPM manualmente."
           );
         }
-      } catch (e) {
-        console.error("Erro OCR:", e);
+      } catch (error) {
+        console.error("Erro no reconhecimento OCR:", error);
         setStatus(
-          "Falha na captura ou no reconhecimento: " + (e.message || e),
-          "error"
+          "Falha no reconhecimento: " +
+          (error.message || "erro inesperado") +
+          ". Você pode digitar o BPM manualmente."
         );
       } finally {
-        busy = false;
-        $("capture").disabled = false;
-        $("retry").disabled = false;
+        setBusy(false);
+        captureBtn.disabled = true;
+      }
+    }
+
+    async function captureAndRead() {
+      if (processing || captured) return;
+
+      setBusy(true);
+
+      try {
+        await takePhoto();
+        await recognizeBpm();
+      } catch (error) {
+        console.error("Falha na captura:", error);
+        setStatus(
+          "Falha na captura: " +
+          (error.message || "erro inesperado") +
+          ". Tente novamente."
+        );
+      } finally {
+        setBusy(false);
+        captureBtn.disabled = true;
       }
     }
 
     async function retry() {
-      bpmInput.value = "";
+      if (processing) return;
 
-      if (stream) {
-        // A transmissão ainda existe; apenas volta a mostrar o vídeo.
-        video.classList.remove("hidden");
-        photo.classList.add("hidden");
-        video.play().catch(() => {});
-        captured = false;
-        setStatus("Câmera ativa. Posicione a etiqueta e capture novamente.");
-        return;
-      }
+      captured = false;
+      bpmInput.value = "";
+      photo.classList.add("hidden");
+      video.classList.remove("hidden");
+      moldura.classList.remove("hidden");
+      cameraBox.style.aspectRatio = "4 / 3";
 
       await openCamera();
     }
 
     function closeCamera() {
       stopCamera();
-      video.classList.remove("hidden");
-      photo.classList.add("hidden");
-      cameraControls.classList.add("hidden");
-      $("openCamera").classList.remove("hidden");
       captured = false;
-      setStatus("Câmera fechada.");
+
+      photo.classList.add("hidden");
+      video.classList.remove("hidden");
+      moldura.classList.remove("hidden");
+
+      retryBtn.classList.add("hidden");
+      closeBtn.classList.add("hidden");
+      openBtn.classList.remove("hidden");
+
+      cameraBox.style.aspectRatio = "4 / 3";
+      setStatus("Câmera fechada. Toque em “Abrir câmera” para começar.");
     }
 
     function searchBpm() {
-      const bpm = bpmInput.value.trim();
+      const bpm = bpmInput.value.trim().replace(/\D/g, "");
 
-      if (!bpm || !/^\d+$/.test(bpm)) {
-        setStatus("Informe um BPM válido antes de pesquisar.", "error");
+      if (!bpm) {
+        setStatus("Informe ou reconheça um BPM antes de consultar.");
         bpmInput.focus();
         return;
       }
 
-      window.location.href =
-        APP_URL + "?bpm=" + encodeURIComponent(bpm);
+      if (bpm.length < 5 || bpm.length > 9) {
+        setStatus("Confira o BPM: o número informado parece incompleto ou inválido.");
+        bpmInput.focus();
+        return;
+      }
+
+      stopCamera();
+
+      const url = APP_URL + "?bpm=" + encodeURIComponent(bpm);
+      window.location.href = url;
     }
 
-    $("openCamera").addEventListener("click", openCamera);
-    $("capture").addEventListener("click", readBpm);
-    $("retry").addEventListener("click", retry);
-    $("closeCamera").addEventListener("click", closeCamera);
-    $("search").addEventListener("click", searchBpm);
+    openBtn.addEventListener("click", openCamera);
+    captureBtn.addEventListener("click", captureAndRead);
+    retryBtn.addEventListener("click", retry);
+    closeBtn.addEventListener("click", closeCamera);
+    searchBtn.addEventListener("click", searchBpm);
 
-    bpmInput.addEventListener("input", () => {
-      bpmInput.value = bpmInput.value.replace(/\D/g, "");
+    bpmInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        searchBpm();
+      }
     });
 
     window.addEventListener("pagehide", stopCamera);
