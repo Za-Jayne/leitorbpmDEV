@@ -53,7 +53,7 @@
       color: #202124;
       text-align: center;
       font-weight: bold;
-      font-size: 20px;
+      font-size: 18px;
     }
 
     .fechar { background: #5f6368; }
@@ -77,12 +77,13 @@
       object-fit: cover;
     }
 
+    /* Guia visual para ajudar o usuário a enquadrar a etiqueta */
     .guia-enquadramento {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 85%;
+      width: 80%;
       height: 35%;
       border: 2px dashed #ffeb3b;
       border-radius: 6px;
@@ -97,7 +98,7 @@
       font-size: 14px;
       line-height: 1.5;
       font-weight: bold;
-      color: #174ea6;
+      color: #d93025;
     }
 
     .instrucao {
@@ -116,7 +117,7 @@
   <h2>Leitor de BPM por Foto</h2>
 
   <p class="instrucao">
-    Enquadre o número da etiqueta no retângulo amarelo e clique em capturar.
+    Enquadre os números da etiqueta de patrimônio dentro do retângulo amarelo e clique em capturar.
   </p>
 
   <button id="iniciarOCR" onclick="iniciarCamera()">
@@ -130,24 +131,24 @@
     </div>
 
     <button class="capturar" onclick="tirarFotoEProcessar()">
-      📸 Capturar e Ler Etiqueta
+      📸 Capturar e Ler Número do BPM
     </button>
 
     <div id="mensagemOCR" aria-live="polite"></div>
 
-    <label for="bpmOCR" style="display:block; margin-top:15px; font-size:13px; color:#5f6368; font-weight: bold;">
-      BPM (Toque para digitar/corrigir se necessário):
+    <label for="bpmOCR" style="display:block; margin-top:15px; font-size:13px; color:#5f6368;">
+      BPM reconhecido (toque para corrigir se necessário):
     </label>
 
     <input
       id="bpmOCR"
       type="text"
       inputmode="numeric"
-      placeholder="Digite ou capture o BPM"
+      placeholder="O BPM aparecerá aqui"
       autocomplete="off"
     >
 
-    <button id="confirmarOCR" onclick="confirmarOCR()" style="background: #188038;">
+    <button id="confirmarOCR" onclick="confirmarOCR()" style="background: #188038;" hidden>
       ✔️ Confirmar BPM e Pesquisar na Planilha
     </button>
 
@@ -160,6 +161,7 @@
 <canvas id="canvasOculto" hidden></canvas>
 
 <script>
+  // URL do seu Web App do Google Apps Script
   const APP_URL = "https://script.google.com/macros/s/AKfycbwtc7P8xFefVvwFSMQHxDcGs-K4aWwbBwTrdyI5qH2JmoNIIhK1t5DbpdecyuXexLoVuQ/exec";
 
   let streamOCR = null;
@@ -174,13 +176,12 @@
     painel.hidden = false;
     botaoIniciar.disabled = true;
     status.textContent = "Iniciando câmera...";
-    document.getElementById("bpmOCR").value = "";
 
     try {
       streamOCR = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
-          facingMode: { ideal: "environment" },
+          facingMode: { ideal: "environment" }, // Câmera traseira
           width: { ideal: 1920 },
           height: { ideal: 1080 }
         }
@@ -188,7 +189,7 @@
 
       video.srcObject = streamOCR;
       await video.play();
-      status.textContent = "Posicione o BPM no retângulo amarelo.";
+      status.textContent = "Ajuste a etiqueta no retângulo e clique em capturar.";
     } catch (erro) {
       status.textContent = "Erro ao acessar a câmera: " + (erro.message || erro);
       botaoIniciar.disabled = false;
@@ -201,72 +202,57 @@
     const canvas = document.getElementById("canvasOculto");
     const status = document.getElementById("mensagemOCR");
     const campoBpm = document.getElementById("bpmOCR");
+    const botaoConfirmar = document.getElementById("confirmarOCR");
 
     if (!video.videoWidth) {
       status.textContent = "Aguarde a câmera estabilizar...";
       return;
     }
 
-    status.textContent = "Processando imagem...";
+    status.textContent = "Processando imagem e lendo números...";
+    botaoConfirmar.hidden = true;
 
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    // Configura o canvas com as dimensões reais do vídeo
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
     
-    // Coordenadas para recortar apenas a região central (onde fica o retângulo amarelo)
-    const larguraVideo = video.videoWidth;
-    const alturaVideo = video.videoHeight;
-    const recW = larguraVideo * 0.75;
-    const recH = alturaVideo * 0.30;
-    const recX = (larguraVideo - recW) / 2;
-    const recY = (alturaVideo - recH) / 2;
-
-    // Redimensiona o canvas para focar na área recortada com zoom (2x)
-    canvas.width = recW * 2;
-    canvas.height = recH * 2;
-
-    // Desenha e aplica filtros de alto contraste e escala de cinza para facilitar o OCR
-    ctx.drawImage(video, recX, recY, recW, recH, 0, 0, canvas.width, canvas.height);
-    
-    // Puxa os pixels para aplicar melhoria manual de contraste via código
-    let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    let d = imgData.data;
-    for (let i = 0; i < d.length; i += 4) {
-      // Converte para escala de cinza e aumenta o contraste
-      let v = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-      // Limiar de contraste forte (Binarização simples)
-      v = v < 130 ? 0 : 255; 
-      d[i] = d[i+1] = d[i+2] = v;
-    }
-    ctx.putImageData(imgData, 0, 0);
+    // Desenha o frame atual do vídeo no canvas
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     try {
+      // Inicializa o worker do Tesseract focado apenas em números (whitelist)
       if (!workerOCR) {
-        status.textContent = "Carregando motor de leitura (1ª vez)...";
+        status.textContent = "Carregando motor de leitura (1ª vez pode demorar alguns segundos)...";
         workerOCR = await Tesseract.createWorker("eng");
         await workerOCR.setParameters({
           tessedit_char_whitelist: "0123456789",
         });
       }
 
-      status.textContent = "Lendo números...";
+      status.textContent = "Lendo o BPM da foto...";
       const resultado = await workerOCR.recognize(canvas);
       const texto = resultado.data.text || "";
 
-      // Procura sequências numéricas (aceita números de 3 a 10 dígitos)
-      const candidatos = texto.match(/\d{3,10}/g) || [];
+      // Procura sequências de 3 ou mais dígitos (padrão comum de BPM)
+      const candidatos = texto.match(/\d{3,}/g) || [];
 
       if (candidatos.length > 0) {
+        // Pega o maior número encontrado ou o primeiro
         candidatos.sort((a, b) => b.length - a.length);
         campoBpm.value = candidatos[0];
         status.style.color = "#188038";
-        status.textContent = "BPM lido com sucesso! Confira abaixo.";
+        status.textContent = "BPM identificado com sucesso!";
+        botaoConfirmar.hidden = false;
       } else {
         status.style.color = "#d93025";
-        status.textContent = "Não foi automático. Digite o número abaixo se preferir:";
+        status.textContent = "Nenhum número claro encontrado. Tente aproximar mais e garantir boa iluminação.";
+        campoBpm.value = "";
       }
 
     } catch (erro) {
       status.style.color = "#d93025";
-      status.textContent = "Digite o número do BPM no campo abaixo:";
+      status.textContent = "Erro no OCR: " + (erro.message || erro);
     }
   }
 
@@ -275,11 +261,13 @@
     const bpm = campo.value.trim();
 
     if (!/^\d+$/.test(bpm)) {
-      alert("Por favor, digite ou capture um número de BPM válido.");
+      alert("Por favor, informe um número de BPM válido.");
       return;
     }
 
     pararCamera();
+
+    // Redireciona de volta para o seu Google Apps Script passando o BPM na URL
     window.location.href = APP_URL + "?bpm=" + encodeURIComponent(bpm);
   }
 
@@ -289,7 +277,9 @@
       streamOCR = null;
     }
 
-    document.getElementById("videoOCR").srcObject = null;
+    const video = document.getElementById("videoOCR");
+    video.srcObject = null;
+
     document.getElementById("painelOCR").hidden = true;
     document.getElementById("iniciarOCR").disabled = false;
     document.getElementById("mensagemOCR").textContent = "";
