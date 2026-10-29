@@ -12,53 +12,47 @@
   <style>
     :root {
       --marinho: #142D4E;
-      --marinho2: #203F65;
       --azul: #1672ce;
       --verde: #168044;
-      --vermelho: #b42318;
       --fundo: #f3f6fa;
       --borda: #d9e2ed;
-      --texto: #26364a;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      padding: 16px;
+      padding: 12px;
       background: var(--fundo);
-      color: var(--texto);
+      color: #26364a;
       font-family: Arial, Helvetica, sans-serif;
     }
 
     .container {
-      width: 100%;
       max-width: 850px;
       margin: 0 auto;
-      padding: 22px;
-      background: #fff;
+      padding: 20px;
+      background: white;
       border: 1px solid var(--borda);
-      border-radius: 14px;
+      border-radius: 12px;
       box-shadow: 0 4px 18px #142d4e12;
     }
 
     h1 {
-      margin: 0 0 10px;
+      margin: 0 0 8px;
       color: var(--marinho);
       font-size: 27px;
     }
 
     .subtitulo {
-      margin: 0 0 20px;
+      margin: 0 0 18px;
       color: #53657b;
       line-height: 1.5;
     }
 
     .painel {
-      margin-top: 18px;
-      padding: 14px;
+      margin-top: 16px;
+      padding: 12px;
       border: 1px solid var(--borda);
       border-radius: 10px;
       background: #fbfcfe;
@@ -67,22 +61,29 @@
     .camera-area {
       position: relative;
       width: 100%;
+      aspect-ratio: 4 / 3;
       overflow: hidden;
       background: #101820;
-      border-radius: 9px;
-      aspect-ratio: 4 / 3;
+      border-radius: 8px;
     }
 
-    video {
+    video, #fotoCongelada {
+      position: absolute;
+      inset: 0;
       display: block;
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      object-fit: fill;
       background: #101820;
+    }
+
+    #fotoCongelada {
+      z-index: 2;
     }
 
     .guia {
       position: absolute;
+      z-index: 3;
       left: 5%;
       top: 8%;
       width: 90%;
@@ -95,10 +96,11 @@
 
     .guia-texto {
       position: absolute;
+      z-index: 4;
       top: 10px;
       left: 50%;
       transform: translateX(-50%);
-      padding: 7px 11px;
+      padding: 7px 10px;
       color: white;
       background: #142d4edb;
       border-radius: 6px;
@@ -112,14 +114,14 @@
       padding: 12px;
       border-radius: 8px;
       background: #eaf3fd;
-      color: var(--marinho2);
+      color: var(--marinho);
       line-height: 1.45;
       overflow-wrap: anywhere;
     }
 
     .aviso.erro {
       background: #fff0ef;
-      color: var(--vermelho);
+      color: #b42318;
     }
 
     .aviso.sucesso {
@@ -129,9 +131,9 @@
 
     button {
       width: 100%;
-      min-height: 48px;
-      margin: 6px 0;
-      padding: 12px 16px;
+      min-height: 47px;
+      margin: 5px 0;
+      padding: 12px;
       border: 0;
       border-radius: 8px;
       font-size: 16px;
@@ -144,35 +146,22 @@
       cursor: wait;
     }
 
-    .btn-azul {
-      color: white;
-      background: var(--azul);
-    }
-
-    .btn-verde {
-      color: white;
-      background: var(--verde);
-    }
-
+    .btn-azul { background: var(--azul); color: white; }
+    .btn-verde { background: var(--verde); color: white; }
     .btn-cinza {
-      color: #34445a;
       background: #e9eef4;
+      color: #34445a;
       border: 1px solid var(--borda);
     }
-
-    .btn-escuro {
-      color: white;
-      background: #526171;
-    }
+    .btn-escuro { background: #526171; color: white; }
 
     label {
       display: block;
-      margin: 15px 0 7px;
+      margin: 14px 0 7px;
       font-weight: 700;
     }
 
     input {
-      display: block;
       width: 100%;
       min-height: 48px;
       padding: 12px;
@@ -184,53 +173,19 @@
     }
 
     .pequeno {
-      margin: 8px 0;
       color: #617187;
       font-size: 13px;
       line-height: 1.5;
     }
 
-    .progresso {
-      height: 5px;
-      width: 100%;
-      margin-top: 10px;
-      background: #e2e8f0;
-      border-radius: 8px;
-      overflow: hidden;
-      display: none;
-    }
-
-    .progresso-interno {
-      width: 0;
-      height: 100%;
-      background: var(--azul);
-      transition: width .2s;
-    }
-
-    .oculto {
-      display: none !important;
-    }
+    .oculto { display: none !important; }
 
     @media (max-width: 520px) {
-      body {
-        padding: 9px;
-      }
-
-      .container {
-        padding: 14px;
-      }
-
-      h1 {
-        font-size: 23px;
-      }
-
-      .painel {
-        padding: 10px;
-      }
-
-      button {
-        font-size: 15px;
-      }
+      body { padding: 8px; }
+      .container { padding: 13px; }
+      h1 { font-size: 23px; }
+      .painel { padding: 9px; }
+      button { font-size: 15px; }
     }
   </style>
 </head>
@@ -238,9 +193,10 @@
 <body>
   <main class="container">
     <h1>📷 Leitor BPM</h1>
+
     <p class="subtitulo">
-      Posicione a etiqueta inteira na tela. O leitor tentará reconhecer
-      o BPM sem exigir que você enquadre somente a linha do número.
+      Enquadre a etiqueta inteira. Toque em capturar para congelar a imagem
+      e reconhecer o BPM.
     </p>
 
     <section class="painel">
@@ -249,16 +205,16 @@
       </button>
 
       <div id="areaCamera" class="oculto">
-        <div class="camera-area">
+        <div id="cameraArea" class="camera-area">
           <video id="video" autoplay playsinline muted></video>
+          <canvas id="fotoCongelada" class="oculto"></canvas>
           <div class="guia"></div>
           <div class="guia-texto">Enquadre a etiqueta inteira</div>
         </div>
 
         <p class="pequeno">
-          Mantenha a etiqueta inteira dentro da moldura. Evite aproximar
-          demais o celular: se a imagem perder o foco, afaste-o um pouco.
-          O BPM deve ficar acima do código de barras.
+          Mantenha o BPM acima do código de barras. Evite aproximar demais
+          o celular para não perder o foco.
         </p>
 
         <button id="btnCapturar" class="btn-azul" type="button">
@@ -266,25 +222,21 @@
         </button>
 
         <button id="btnTentar" class="btn-cinza" type="button">
-          Tentar novamente
+          Nova captura
         </button>
       </div>
 
       <div id="status" class="aviso">
         Abra a câmera para começar.
       </div>
-
-      <div id="progresso" class="progresso">
-        <div id="progressoInterno" class="progresso-interno"></div>
-      </div>
     </section>
 
     <section class="painel">
-      <h2 style="margin: 0 0 12px; color: var(--marinho); font-size: 21px;">
+      <h2 style="margin:0 0 12px;color:#142D4E;font-size:21px">
         Resultado da leitura
       </h2>
 
-      <label for="campoBpm">BPM reconhecido (confira antes de pesquisar):</label>
+      <label for="campoBpm">BPM reconhecido:</label>
       <input
         id="campoBpm"
         type="text"
@@ -294,7 +246,7 @@
       >
 
       <p class="pequeno">
-        Se necessário, corrija o número manualmente antes de continuar.
+        Confira o número. Se necessário, corrija manualmente antes de pesquisar.
       </p>
 
       <button id="btnConsultar" class="btn-verde" type="button">
@@ -314,6 +266,8 @@
       "https://script.google.com/macros/s/AKfycbwtc7P8xFefVvwFSMQHxDcGs-K4aWwbBwTrdyI5qH2JmoNIIhK1t5DbpdecyuXexLoVuQ/exec";
 
     const video = document.getElementById("video");
+    const foto = document.getElementById("fotoCongelada");
+    const cameraArea = document.getElementById("cameraArea");
     const areaCamera = document.getElementById("areaCamera");
     const btnAbrir = document.getElementById("btnAbrir");
     const btnCapturar = document.getElementById("btnCapturar");
@@ -322,42 +276,27 @@
     const btnFechar = document.getElementById("btnFechar");
     const campoBpm = document.getElementById("campoBpm");
     const statusEl = document.getElementById("status");
-    const progresso = document.getElementById("progresso");
-    const progressoInterno = document.getElementById("progressoInterno");
 
     let stream = null;
-    let lendo = false;
     let workerOCR = null;
-    let workerPromise = null;
+    let preparandoWorker = null;
+    let lendo = false;
+    let imagemCapturada = false;
 
-    function mostrarStatus(mensagem, tipo = "") {
+    function status(mensagem, tipo = "") {
       statusEl.textContent = mensagem;
       statusEl.className = "aviso" + (tipo ? " " + tipo : "");
     }
 
-    function definirProgresso(valor) {
-      progresso.style.display = "block";
-      const percentual = Math.max(0, Math.min(100, valor));
-      progressoInterno.style.width = percentual + "%";
-    }
-
-    function esconderProgresso() {
-      progresso.style.display = "none";
-      progressoInterno.style.width = "0%";
-    }
-
     async function abrirCamera() {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        mostrarStatus(
-          "Este navegador não disponibilizou a câmera. Abra o leitor pelo endereço HTTPS do GitHub Pages e confira as permissões do navegador.",
-          "erro"
-        );
+      if (!navigator.mediaDevices?.getUserMedia) {
+        status("A câmera não está disponível. Abra o leitor pelo endereço HTTPS do GitHub Pages.", "erro");
         return;
       }
 
       try {
         btnAbrir.disabled = true;
-        mostrarStatus("Solicitando acesso à câmera...");
+        status("Abrindo câmera...");
 
         stream = await navigator.mediaDevices.getUserMedia({
           audio: false,
@@ -371,67 +310,69 @@
         video.srcObject = stream;
         await video.play();
 
+        // A área assume a proporção real do vídeo, evitando faixas laterais.
+        ajustarProporcaoVideo();
+
+        video.classList.remove("oculto");
+        foto.classList.add("oculto");
         areaCamera.classList.remove("oculto");
         btnAbrir.classList.add("oculto");
 
-        mostrarStatus(
-          "Câmera ativa. Posicione a etiqueta e toque em Capturar e ler BPM."
-        );
+        imagemCapturada = false;
+        status("Câmera ativa. Enquadre a etiqueta e toque em Capturar e ler BPM.");
       } catch (erro) {
-        console.error("Erro ao abrir câmera:", erro);
+        console.error(erro);
 
         let mensagem = "Não foi possível abrir a câmera.";
-
-        if (erro.name === "NotAllowedError" ||
-            erro.name === "PermissionDeniedError") {
-          mensagem =
-            "Permissão da câmera negada. Autorize a câmera nas configurações do navegador e tente novamente.";
+        if (erro.name === "NotAllowedError") {
+          mensagem = "Permissão da câmera negada. Autorize o acesso à câmera no navegador.";
         } else if (erro.name === "NotFoundError") {
-          mensagem = "Nenhuma câmera compatível foi encontrada.";
+          mensagem = "Nenhuma câmera foi encontrada.";
         } else if (erro.name === "NotReadableError") {
-          mensagem =
-            "A câmera pode estar sendo usada por outro aplicativo. Feche-o e tente novamente.";
+          mensagem = "A câmera pode estar sendo usada por outro aplicativo.";
         }
 
-        mostrarStatus(mensagem, "erro");
+        status(mensagem, "erro");
       } finally {
         btnAbrir.disabled = false;
       }
     }
 
-    function fecharCamera() {
+    function ajustarProporcaoVideo() {
+      if (video.videoWidth && video.videoHeight) {
+        cameraArea.style.aspectRatio =
+          video.videoWidth + " / " + video.videoHeight;
+      }
+    }
+
+    function pararStream() {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
         stream = null;
       }
-
       video.srcObject = null;
-      areaCamera.classList.add("oculto");
-      btnAbrir.classList.remove("oculto");
-
-      mostrarStatus("Câmera fechada.");
     }
 
-    async function obterWorkerOCR() {
+    function fecharCamera() {
+      pararStream();
+      video.classList.remove("oculto");
+      foto.classList.add("oculto");
+      areaCamera.classList.add("oculto");
+      btnAbrir.classList.remove("oculto");
+      imagemCapturada = false;
+      status("Câmera fechada.");
+    }
+
+    async function obterWorker() {
       if (workerOCR) return workerOCR;
-      if (workerPromise) return workerPromise;
+      if (preparandoWorker) return preparandoWorker;
 
-      workerPromise = (async () => {
-        mostrarStatus("Preparando o mecanismo de leitura. Aguarde...");
-
-        const worker = await Tesseract.createWorker("eng", 1, {
-          logger: info => {
-            if (info.status === "recognizing text" &&
-                typeof info.progress === "number") {
-              definirProgresso(15 + info.progress * 80);
-            }
-          }
-        });
+      preparandoWorker = (async () => {
+        const worker = await Tesseract.createWorker("eng", 1);
 
         await worker.setParameters({
           tessedit_char_whitelist: "0123456789",
-          tessedit_pageseg_mode: "11",
-          preserve_interword_spaces: "1"
+          tessedit_pageseg_mode: "11"
         });
 
         workerOCR = worker;
@@ -439,244 +380,170 @@
       })();
 
       try {
-        return await workerPromise;
+        return await preparandoWorker;
       } catch (erro) {
-        workerPromise = null;
+        preparandoWorker = null;
         throw erro;
       }
     }
 
-    /*
-     * Captura a imagem do vídeo, evitando diferenças de enquadramento
-     * que podem ocorrer ao usar uma fotografia separada do sensor.
-     */
-    function capturarImagemVideo() {
+    function congelarImagem() {
       if (!video.videoWidth || !video.videoHeight) {
-        throw new Error("A câmera ainda não está pronta. Aguarde e tente novamente.");
+        throw new Error("A câmera ainda não está pronta.");
       }
 
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      foto.width = video.videoWidth;
+      foto.height = video.videoHeight;
 
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const ctx = foto.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(video, 0, 0, foto.width, foto.height);
 
-      return canvas;
+      // Congela visualmente a imagem e encerra a transmissão ao vivo.
+      video.pause();
+      video.classList.add("oculto");
+      foto.classList.remove("oculto");
+
+      pararStream();
+      imagemCapturada = true;
     }
 
-    /*
-     * A moldura corresponde à etiqueta inteira.
-     * O OCR usa a parte superior da moldura, onde está o texto e o BPM,
-     * evitando a maior parte do código de barras localizado abaixo.
-     */
-    function prepararRegiaoTexto(imagem) {
-      const x = Math.round(imagem.width * 0.05);
-      const y = Math.round(imagem.height * 0.08);
-      const largura = Math.round(imagem.width * 0.90);
-      const alturaGuia = Math.round(imagem.height * 0.72);
-
-      // Considera a região superior da moldura, antes do código de barras.
-      const alturaTexto = Math.round(alturaGuia * 0.76);
+    function prepararImagemOCR() {
+      /*
+       * Usa o mesmo enquadramento visual da moldura.
+       * Analisa a parte superior, onde fica o texto impresso,
+       * evitando a maior parte do código de barras.
+       */
+      const x = Math.round(foto.width * 0.05);
+      const y = Math.round(foto.height * 0.08);
+      const largura = Math.round(foto.width * 0.90);
+      const altura = Math.round(foto.height * 0.72 * 0.76);
 
       const canvas = document.createElement("canvas");
-      canvas.width = largura;
-      canvas.height = alturaTexto;
 
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      ctx.drawImage(
-        imagem,
-        x, y, largura, alturaTexto,
-        0, 0, largura, alturaTexto
-      );
-
-      return canvas;
-    }
-
-    function ampliarImagem(origem, fator = 2) {
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.max(1, Math.round(origem.width * fator));
-      canvas.height = Math.max(1, Math.round(origem.height * fator));
+      // Ampliação moderada para facilitar a leitura do texto pequeno.
+      const fator = Math.min(2, 2400 / Math.max(largura, altura));
+      canvas.width = Math.round(largura * fator);
+      canvas.height = Math.round(altura * fator);
 
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(origem, 0, 0, canvas.width, canvas.height);
 
-      return canvas;
-    }
+      ctx.drawImage(
+        foto,
+        x, y, largura, altura,
+        0, 0, canvas.width, canvas.height
+      );
 
-    function criarVersaoProcessada(origem, modo) {
-      const canvas = document.createElement("canvas");
-      canvas.width = origem.width;
-      canvas.height = origem.height;
+      // Contraste e escala de cinza em uma única passagem.
+      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = pixels.data;
 
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      ctx.drawImage(origem, 0, 0);
-
-      const imagem = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const dados = imagem.data;
-
-      for (let i = 0; i < dados.length; i += 4) {
-        const cinza =
-          0.299 * dados[i] +
-          0.587 * dados[i + 1] +
-          0.114 * dados[i + 2];
-
-        let valor;
-
-        if (modo === "contraste") {
-          valor = Math.max(0, Math.min(255, (cinza - 120) * 1.65 + 128));
-        } else if (modo === "limiar") {
-          valor = cinza < 155 ? 0 : 255;
-        } else {
-          valor = cinza;
-        }
-
-        dados[i] = valor;
-        dados[i + 1] = valor;
-        dados[i + 2] = valor;
+      for (let i = 0; i < d.length; i += 4) {
+        const cinza = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        const valor = Math.max(0, Math.min(255, (cinza - 115) * 1.7 + 128));
+        d[i] = valor;
+        d[i + 1] = valor;
+        d[i + 2] = valor;
       }
 
-      ctx.putImageData(imagem, 0, 0);
+      ctx.putImageData(pixels, 0, 0);
       return canvas;
-    }
-
-    function extrairNumeros(texto) {
-      const encontrados = texto.match(/\d{4,}/g) || [];
-
-      // Não junta sequências distintas: cada número permanece separado.
-      return [...new Set(encontrados)];
-    }
-
-    async function reconhecerImagem(canvas, worker) {
-      const resultado = await worker.recognize(canvas);
-      return resultado.data.text || "";
     }
 
     async function capturarELer() {
       if (lendo) return;
 
       if (!stream) {
-        mostrarStatus("Abra a câmera antes de capturar a etiqueta.", "erro");
+        status("Abra a câmera antes de capturar.", "erro");
         return;
       }
 
       lendo = true;
       btnCapturar.disabled = true;
       btnTentar.disabled = true;
-      esconderProgresso();
-      definirProgresso(5);
 
       try {
-        mostrarStatus("Capturando a imagem...");
-        const imagem = capturarImagemVideo();
+        // A captura é congelada imediatamente ao tocar no botão.
+        congelarImagem();
+        status("Imagem capturada. Reconhecendo o BPM...");
 
-        mostrarStatus("Preparando a região de texto da etiqueta...");
-        const regiao = prepararRegiaoTexto(imagem);
-        const ampliada = ampliarImagem(regiao, 2);
+        const imagemOCR = prepararImagemOCR();
+        const worker = await obterWorker();
+        const resultado = await worker.recognize(imagemOCR);
+        const texto = resultado.data.text || "";
 
-        const worker = await obterWorkerOCR();
+        // Mantém cada sequência numérica separada.
+        const numeros = [...new Set(texto.match(/\d{4,}/g) || [])];
 
-        const versoes = [
-          criarVersaoProcessada(ampliada, "cinza"),
-          criarVersaoProcessada(ampliada, "contraste"),
-          criarVersaoProcessada(ampliada, "limiar")
-        ];
-
-        const candidatos = new Map();
-        const textos = [];
-
-        for (let i = 0; i < versoes.length; i++) {
-          mostrarStatus(
-            "Lendo a etiqueta... tentativa " + (i + 1) + " de " + versoes.length + "."
-          );
-
-          const texto = await reconhecerImagem(versoes[i], worker);
-          textos.push(texto);
-
-          const numeros = extrairNumeros(texto);
-          numeros.forEach(numero => {
-            candidatos.set(numero, (candidatos.get(numero) || 0) + 1);
-          });
-        }
-
-        definirProgresso(100);
-
-        if (candidatos.size === 0) {
-          mostrarStatus(
-            "Não consegui identificar o BPM. Afaste um pouco o celular, ajuste o foco e tente novamente com a etiqueta inteira dentro da moldura.",
+        if (numeros.length === 1) {
+          campoBpm.value = numeros[0];
+          status("Número identificado. Confira se corresponde ao BPM da etiqueta.", "sucesso");
+        } else if (numeros.length > 1) {
+          // Não junta números nem presume que o maior seja o BPM.
+          campoBpm.value = "";
+          status(
+            "A imagem foi capturada, mas o leitor encontrou números ambíguos. Faça uma nova captura com melhor foco ou informe o BPM manualmente.",
             "erro"
           );
-          campoBpm.value = "";
-          return;
-        }
-
-        const ordenados = [...candidatos.entries()].sort((a, b) => {
-          if (b[1] !== a[1]) return b[1] - a[1];
-          return b[0].length - a[0].length;
-        });
-
-        if (ordenados.length === 1) {
-          campoBpm.value = ordenados[0][0];
-          mostrarStatus(
-            "Número identificado. Confira se ele corresponde ao BPM impresso na etiqueta antes de pesquisar.",
-            "sucesso"
-          );
         } else {
-          campoBpm.value = ordenados[0][0];
-          mostrarStatus(
-            "Encontrei mais de um possível número. Confira o campo abaixo com atenção e corrija-o se necessário antes de pesquisar.",
-            "sucesso"
+          campoBpm.value = "";
+          status(
+            "A imagem foi capturada, mas o BPM não foi reconhecido. Toque em Nova captura e tente com melhor foco.",
+            "erro"
           );
         }
       } catch (erro) {
-        console.error("Erro no OCR:", erro);
-        mostrarStatus(
-          "Ocorreu um erro durante a leitura. Verifique sua conexão com a internet e tente novamente. " +
-          (erro && erro.message ? erro.message : ""),
+        console.error("Erro na leitura:", erro);
+        status(
+          "Não foi possível concluir a leitura. " +
+          (erro.message || "Tente novamente."),
           "erro"
         );
       } finally {
         lendo = false;
         btnCapturar.disabled = false;
         btnTentar.disabled = false;
-        setTimeout(esconderProgresso, 900);
       }
     }
 
-    function tentarNovamente() {
+    async function novaCaptura() {
       campoBpm.value = "";
-      mostrarStatus(
-        "Posicione novamente a etiqueta inteira na moldura e toque em Capturar e ler BPM."
-      );
+
+      // Se a câmera foi encerrada após a captura, abre-a novamente.
+      if (!stream) {
+        await abrirCamera();
+        return;
+      }
+
+      video.classList.remove("oculto");
+      foto.classList.add("oculto");
+      imagemCapturada = false;
+
+      status("Câmera ativa. Enquadre a etiqueta e capture novamente.");
     }
 
     function consultarBpm() {
       const bpm = campoBpm.value.trim();
 
       if (!bpm) {
-        mostrarStatus("Informe ou leia um BPM antes de pesquisar.", "erro");
+        status("Informe ou leia um BPM antes de pesquisar.", "erro");
         campoBpm.focus();
         return;
       }
 
       if (!/^\d+$/.test(bpm)) {
-        mostrarStatus(
-          "O BPM deve conter somente números. Corrija o campo antes de pesquisar.",
-          "erro"
-        );
+        status("O BPM deve conter somente números.", "erro");
         campoBpm.focus();
         return;
       }
 
-      const url = APP_URL + "?bpm=" + encodeURIComponent(bpm);
-      window.location.href = url;
+      window.location.href = APP_URL + "?bpm=" + encodeURIComponent(bpm);
     }
 
     btnAbrir.addEventListener("click", abrirCamera);
     btnCapturar.addEventListener("click", capturarELer);
-    btnTentar.addEventListener("click", tentarNovamente);
+    btnTentar.addEventListener("click", novaCaptura);
     btnConsultar.addEventListener("click", consultarBpm);
     btnFechar.addEventListener("click", fecharCamera);
 
@@ -684,11 +551,7 @@
       campoBpm.value = campoBpm.value.replace(/\D/g, "");
     });
 
-    window.addEventListener("pagehide", () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-    });
+    window.addEventListener("pagehide", pararStream);
   </script>
 </body>
 </html>
