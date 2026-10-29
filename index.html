@@ -1,4 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leitor BPM</title>
 
+  <!-- Biblioteca Tesseract.js para OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f4f6f8;
+      color: #202124;
+    }
+
+    main {
+      max-width: 520px;
+      margin: auto;
+      background: white;
+      padding: 18px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h2 { color: #174ea6; text-align: center; }
+
+    button, input {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      border: 0;
+      background: #188038;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    input {
+      border: 1px solid #dadce0;
+      background: white;
+      color: #202124;
+      text-align: center;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .fechar { background: #5f6368; }
+    .capturar { background: #174ea6; }
+
+    .camera-container {
+      position: relative;
+      width: 100%;
+      max-width: 360px;
+      margin: 12px auto;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #202124;
+    }
+
+    #videoOCR {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 400px;
+      object-fit: cover;
+    }
+
+    /* Guia visual para ajudar o usuário a enquadrar a etiqueta */
+    .guia-enquadramento {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80%;
+      height: 35%;
+      border: 2px dashed #ffeb3b;
+      border-radius: 6px;
+      pointer-events: none;
+      box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.4);
+    }
+
+    #mensagemOCR {
+      margin-top: 12px;
+      text-align: center;
+      overflow-wrap: anywhere;
+      font-size: 14px;
+      line-height: 1.5;
+      font-weight: bold;
+      color: #d93025;
+    }
+
+    .instrucao {
+      color: #5f6368;
+      font-size: 14px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    [hidden] { display: none !important; }
+  </style>
+</head>
+
+<body>
+<main>
+  <h2>Leitor de BPM por Foto</h2>
+
+  <p class="instrucao">
+    Enquadre os números da etiqueta de patrimônio dentro do retângulo amarelo e clique em capturar.
+  </p>
+
+  <button id="iniciarOCR" onclick="iniciarCamera()">
+    📷 Abrir Câmera
+  </button>
+
+  <div id="painelOCR" hidden>
+    <div class="camera-container">
+      <video id="videoOCR" autoplay playsinline muted></video>
+      <div class="guia-enquadramento"></div>
+    </div>
+
+    <button class="capturar" onclick="tirarFotoEProcessar()">
+      📸 Capturar e Ler Número do BPM
+    </button>
+
+    <div id="mensagemOCR" aria-live="polite"></div>
+
+    <label for="bpmOCR" style="display:block; margin-top:15px; font-size:13px; color:#5f6368;">
+      BPM reconhecido (toque para corrigir se necessário):
+    </label>
+
+    <input
+      id="bpmOCR"
+      type="text"
+      inputmode="numeric"
+      placeholder="O BPM aparecerá aqui"
+      autocomplete="off"
+    >
+
+    <button id="confirmarOCR" onclick="confirmarOCR()" style="background: #188038;" hidden>
+      ✔️ Confirmar BPM e Pesquisar na Planilha
+    </button>
+
+    <button class="fechar" onclick="pararCamera()">
+      Fechar Câmera
+    </button>
+  </div>
+</main>
+
+<canvas id="canvasOculto" hidden></canvas>
+
+<script>
+  // URL do seu Web App do Google Apps Script
+  const APP_URL = "https://script.google.com/macros/s/AKfycbwtc7P8xFefVvwFSMQHxDcGs-K4aWwbBwTrdyI5qH2JmoNIIhK1t5DbpdecyuXexLoVuQ/exec";
+
+  let streamOCR = null;
+  let workerOCR = null;
+
+  async function iniciarCamera() {
+    const painel = document.getElementById("painelOCR");
+    const video = document.getElementById("videoOCR");
+    const status = document.getElementById("mensagemOCR");
+    const botaoIniciar = document.getElementById("iniciarOCR");
+
+    painel.hidden = false;
+    botaoIniciar.disabled = true;
+    status.textContent = "Iniciando câmera...";
+
+    try {
+      streamOCR = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: { ideal: "environment" }, // Câmera traseira
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      });
+
+      video.srcObject = streamOCR;
+      await video.play();
+      status.textContent = "Ajuste a etiqueta no retângulo e clique em capturar.";
+    } catch (erro) {
+      status.textContent = "Erro ao acessar a câmera: " + (erro.message || erro);
+      botaoIniciar.disabled = false;
+      painel.hidden = true;
+    }
+  }
+
+  async function tirarFotoEProcessar() {
+    const video = document.getElementById("videoOCR");
+    const canvas = document.getElementById("canvasOculto");
+    const status = document.getElementById("mensagemOCR");
+    const campoBpm = document.getElementById("bpmOCR");
+    const botaoConfirmar = document.getElementById("confirmarOCR");
+
+    if (!video.videoWidth) {
+      status.textContent = "Aguarde a câmera estabilizar...";
+      return;
+    }
+
+    status.textContent = "Processando imagem e lendo números...";
+    botaoConfirmar.hidden = true;
+
+    // Configura o canvas com as dimensões reais do vídeo
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    
+    // Desenha o frame atual do vídeo no canvas
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    try {
+      // Inicializa o worker do Tesseract focado apenas em números (whitelist)
+      if (!workerOCR) {
+        status.textContent = "Carregando motor de leitura (1ª vez pode demorar alguns segundos)...";
+        workerOCR = await Tesseract.createWorker("eng");
+        await workerOCR.setParameters({
+          tessedit_char_whitelist: "0123456789",
+        });
+      }
+
+      status.textContent = "Lendo o BPM da foto...";
+      const resultado = await workerOCR.recognize(canvas);
+      const texto = resultado.data.text || "";
+
+      // Procura sequências de 3 ou mais dígitos (padrão comum de BPM)
+      const candidatos = texto.match(/\d{3,}/g) || [];
+
+      if (candidatos.length > 0) {
+        // Pega o maior número encontrado ou o primeiro
+        candidatos.sort((a, b) => b.length - a.length);
+        campoBpm.value = candidatos[0];
+        status.style.color = "#188038";
+        status.textContent = "BPM identificado com sucesso!";
+        botaoConfirmar.hidden = false;
+      } else {
+        status.style.color = "#d93025";
+        status.textContent = "Nenhum número claro encontrado. Tente aproximar mais e garantir boa iluminação.";
+        campoBpm.value = "";
+      }
+
+    } catch (erro) {
+      status.style.color = "#d93025";
+      status.textContent = "Erro no OCR: " + (erro.message || erro);
+    }
+  }
+
+  function confirmarOCR() {
+    const campo = document.getElementById("bpmOCR");
+    const bpm = campo.value.trim();
+
+    if (!/^\d+$/.test(bpm)) {
+      alert("Por favor, informe um número de BPM válido.");
+      return;
+    }
+
+    pararCamera();
+
+    // Redireciona de volta para o seu Google Apps Script passando o BPM na URL
+    window.location.href = APP_URL + "?bpm=" + encodeURIComponent(bpm);
+  }
+
+  function pararCamera() {
+    if (streamOCR) {
+      streamOCR.getTracks().forEach(track => track.stop());
+      streamOCR = null;
+    }
+
+    const video = document.getElementById("videoOCR");
+    video.srcObject = null;
+
+    document.getElementById("painelOCR").hidden = true;
+    document.getElementById("iniciarOCR").disabled = false;
+    document.getElementById("mensagemOCR").textContent = "";
+  }
+</script>
+</body>
+</html>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
