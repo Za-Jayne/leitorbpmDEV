@@ -110,12 +110,16 @@
       background: #202124;
     }
 
+    /*
+     * A moldura deve envolver somente a linha do BPM.
+     * Não inclua o código de barras.
+     */
     .moldura {
       position: absolute;
       left: 5%;
-      top: 15%;
+      top: 35%;
       width: 90%;
-      height: 70%;
+      height: 30%;
       border: 2px solid #34a853;
       border-radius: 8px;
       pointer-events: none;
@@ -124,7 +128,7 @@
 
     .legenda-moldura {
       position: absolute;
-      top: 5px;
+      top: calc(35% - 22px);
       left: 0;
       right: 0;
       text-align: center;
@@ -172,9 +176,9 @@
   <h2>Leitor BPM</h2>
 
   <p class="instrucao">
-    Posicione a etiqueta na câmera e enquadre a região do número
-    na moldura verde. Mantenha a etiqueta nítida e toque em
-    <strong>Capturar e ler BPM</strong>.
+    Posicione a etiqueta na câmera e alinhe somente a linha
+    que contém o número do BPM com a faixa verde.
+    Deixe o código de barras fora da faixa e mantenha a imagem nítida.
   </p>
 
   <button id="iniciarOCR" onclick="iniciarOCR()">
@@ -182,7 +186,6 @@
   </button>
 
   <section id="painelOCR" hidden>
-
     <div class="area-camera">
 
       <video
@@ -197,7 +200,7 @@
       <div id="moldura" class="moldura"></div>
 
       <div id="legendaMoldura" class="legenda-moldura">
-        Enquadre a etiqueta nesta área
+        Alinhe somente o número BPM
       </div>
 
     </div>
@@ -219,7 +222,6 @@
     </button>
 
     <div id="painelResultado" class="resultado" hidden>
-
       <label for="bpmOCR">
         BPM reconhecido (confira antes de pesquisar):
       </label>
@@ -232,14 +234,13 @@
         autocomplete="off">
 
       <p class="nota">
-        Confira todos os dígitos. Se o reconhecimento estiver
-        incorreto, corrija o número manualmente ou tente outra captura.
+        Confira os dígitos. Você pode corrigir o número manualmente
+        ou tentar outra captura.
       </p>
 
       <button id="confirmarOCR" onclick="confirmarOCR()">
         Confirmar BPM e pesquisar
       </button>
-
     </div>
 
     <button
@@ -248,7 +249,6 @@
       onclick="pararOCR()">
       Fechar câmera
     </button>
-
   </section>
 </main>
 
@@ -333,7 +333,7 @@
       elemento("bpmOCR").value = "";
 
       status.textContent =
-        "Câmera ativa. Enquadre a etiqueta e capture a imagem.";
+        "Câmera ativa. Alinhe a linha do BPM na faixa verde.";
 
     } catch (erro) {
       status.textContent =
@@ -357,7 +357,7 @@
 
     await workerOCR.setParameters({
       tessedit_char_whitelist: "0123456789",
-      tessedit_pageseg_mode: "11"
+      tessedit_pageseg_mode: "7"
     });
 
     return workerOCR;
@@ -393,14 +393,13 @@
       const faixa = streamOCR.getVideoTracks()[0];
 
       /*
-       * Tenta obter uma fotografia real do sensor.
-       * Se não houver suporte, usa o quadro do vídeo.
+       * Tenta fotografar diretamente pelo sensor.
+       * Usa o quadro do vídeo se essa função não estiver disponível.
        */
       if ("ImageCapture" in window && faixa) {
         try {
           const capturador = new ImageCapture(faixa);
           const foto = await capturador.takePhoto();
-
           bitmap = await createImageBitmap(foto);
         } catch (erroFoto) {
           console.warn(
@@ -423,12 +422,11 @@
         ? bitmap.height
         : video.videoHeight;
 
-      // Preserva a resolução da imagem capturada.
+      // Preserva a fotografia original na tela.
       canvas.width = largura;
       canvas.height = altura;
 
       const contexto = canvas.getContext("2d");
-
       contexto.filter = "none";
 
       if (bitmap) {
@@ -448,23 +446,20 @@
       elemento("tentarNovamente").hidden = false;
       elemento("painelResultado").hidden = true;
 
-      status.textContent =
-        "Fotografia capturada. Preparando imagem para leitura...";
-
       /*
-       * Recorta a região indicada pela moldura verde.
-       * A fotografia original continua preservada no canvas visível.
+       * Recorte central estreito, correspondente à faixa verde.
+       * O código de barras deve ficar fora dessa área.
        */
       const x = Math.round(largura * 0.05);
-      const y = Math.round(altura * 0.15);
+      const y = Math.round(altura * 0.35);
       const larguraCorte = Math.round(largura * 0.90);
-      const alturaCorte = Math.round(altura * 0.70);
+      const alturaCorte = Math.round(altura * 0.30);
 
       const canvasOCR = document.createElement("canvas");
 
-      // Limita a imagem de trabalho para evitar processamento excessivo.
+      // Amplia moderadamente sem criar imagens de trabalho enormes.
       const maiorLado = Math.max(larguraCorte, alturaCorte);
-      const escala = Math.min(1.5, 2200 / maiorLado);
+      const escala = Math.min(2, 1800 / maiorLado);
 
       canvasOCR.width = Math.max(
         1,
@@ -495,7 +490,7 @@
       contextoOCR.filter = "none";
 
       status.textContent =
-        "Reconhecendo os números da etiqueta...";
+        "Reconhecendo somente a linha enquadrada...";
 
       const worker = await obterWorkerOCR();
 
@@ -505,12 +500,12 @@
 
       if (minhaSessao !== sessaoOCR) return;
 
-      const bpm = extrairBPM(resultado.data.text || "");
+      const extracao = extrairBPM(resultado.data.text || "");
 
       elemento("painelResultado").hidden = false;
 
-      if (bpm) {
-        elemento("bpmOCR").value = bpm;
+      if (extracao.bpm) {
+        elemento("bpmOCR").value = extracao.bpm;
 
         status.textContent =
           "Número identificado. Confira todos os dígitos antes de pesquisar.";
@@ -518,8 +513,8 @@
         elemento("bpmOCR").value = "";
 
         status.textContent =
-          "Não foi possível identificar os dígitos. " +
-          "Tente novamente com a etiqueta mais próxima, nítida e bem iluminada.";
+          "Não foi possível identificar um número único na faixa. " +
+          "Alinhe melhor o BPM e tente novamente.";
       }
 
     } catch (erro) {
@@ -543,13 +538,33 @@
 
   function extrairBPM(textoOCR) {
     /*
-     * A etiqueta contém apenas uma informação numérica:
-     * o BPM. Não é necessário reconhecer as letras do rótulo.
+     * Não concatena todos os números encontrados.
+     * Só aceita uma sequência numérica contínua.
      */
-    const somenteDigitos = String(textoOCR || "")
-      .replace(/\D/g, "");
+    const candidatos = String(textoOCR || "")
+      .match(/\d+/g) || [];
 
-    return somenteDigitos || "";
+    // Ignora possíveis leituras de apenas um dígito.
+    const validos = candidatos.filter(
+      numero => numero.length >= 2
+    );
+
+    if (validos.length === 0) {
+      return { bpm: "" };
+    }
+
+    /*
+     * Se o OCR separar o BPM em vários blocos,
+     * ou identificar outros números na faixa,
+     * não escolhe arbitrariamente.
+     */
+    const unicos = [...new Set(validos)];
+
+    if (unicos.length !== 1) {
+      return { bpm: "" };
+    }
+
+    return { bpm: unicos[0] };
   }
 
   function tentarNovamenteOCR() {
@@ -577,7 +592,7 @@
     elemento("bpmOCR").value = "";
 
     elemento("mensagemOCR").textContent =
-      "Enquadre novamente a etiqueta e capture outra imagem.";
+      "Alinhe somente a linha do BPM na faixa verde e capture novamente.";
   }
 
   function confirmarOCR() {
