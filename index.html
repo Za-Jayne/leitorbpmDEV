@@ -3,10 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Leitor BPM</title>
-
-  <!-- Biblioteca Tesseract.js para OCR -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <title>Leitor BPM por Foto</title>
 
   <style>
     body {
@@ -113,10 +110,10 @@
 
 <body>
 <main>
-  <h2>Leitor de BPM por Foto</h2>
+  <h2>Capturar Etiqueta BPM</h2>
 
   <p class="instrucao">
-    Enquadre o número da etiqueta no retângulo amarelo e clique em capturar.
+    Enquadre o número da etiqueta no retângulo amarelo e clique em capturar foto.
   </p>
 
   <button id="iniciarOCR" onclick="iniciarCamera()">
@@ -129,14 +126,14 @@
       <div class="guia-enquadramento"></div>
     </div>
 
-    <button class="capturar" onclick="tirarFotoEProcessar()">
-      📸 Capturar e Ler Etiqueta
+    <button class="capturar" onclick="enviarFotoParaServidor()">
+      📸 Tirar Foto e Consultar
     </button>
 
     <div id="mensagemOCR" aria-live="polite"></div>
 
     <label for="bpmOCR" style="display:block; margin-top:15px; font-size:13px; color:#5f6368; font-weight: bold;">
-      BPM (Toque para digitar/corrigir se necessário):
+      BPM (Confirme ou digite se necessário):
     </label>
 
     <input
@@ -160,10 +157,10 @@
 <canvas id="canvasOculto" hidden></canvas>
 
 <script>
+  // ATENÇÃO: Cole a URL do seu Web App do Google Apps Script aqui
   const APP_URL = "https://script.google.com/macros/s/AKfycbwtc7P8xFefVvwFSMQHxDcGs-K4aWwbBwTrdyI5qH2JmoNIIhK1t5DbpdecyuXexLoVuQ/exec";
 
   let streamOCR = null;
-  let workerOCR = null;
 
   async function iniciarCamera() {
     const painel = document.getElementById("painelOCR");
@@ -181,8 +178,8 @@
         audio: false,
         video: {
           facingMode: { ideal: "environment" },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
         }
       });
 
@@ -196,7 +193,7 @@
     }
   }
 
-  async function tirarFotoEProcessar() {
+  function enviarFotoParaServidor() {
     const video = document.getElementById("videoOCR");
     const canvas = document.getElementById("canvasOculto");
     const status = document.getElementById("mensagemOCR");
@@ -207,11 +204,9 @@
       return;
     }
 
-    status.textContent = "Processando imagem...";
+    status.textContent = "Enviando foto para análise...";
 
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    
-    // Coordenadas para recortar apenas a região central (onde fica o retângulo amarelo)
+    // Recorta a área central da etiqueta
     const larguraVideo = video.videoWidth;
     const alturaVideo = video.videoHeight;
     const recW = larguraVideo * 0.75;
@@ -219,55 +214,27 @@
     const recX = (larguraVideo - recW) / 2;
     const recY = (alturaVideo - recH) / 2;
 
-    // Redimensiona o canvas para focar na área recortada com zoom (2x)
-    canvas.width = recW * 2;
-    canvas.height = recH * 2;
+    canvas.width = recW;
+    canvas.height = recH;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, recX, recY, recW, recH, 0, 0, recW, recH);
 
-    // Desenha e aplica filtros de alto contraste e escala de cinza para facilitar o OCR
-    ctx.drawImage(video, recX, recY, recW, recH, 0, 0, canvas.width, canvas.height);
-    
-    // Puxa os pixels para aplicar melhoria manual de contraste via código
-    let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    let d = imgData.data;
-    for (let i = 0; i < d.length; i += 4) {
-      // Converte para escala de cinza e aumenta o contraste
-      let v = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-      // Limiar de contraste forte (Binarização simples)
-      v = v < 130 ? 0 : 255; 
-      d[i] = d[i+1] = d[i+2] = v;
-    }
-    ctx.putImageData(imgData, 0, 0);
+    // Converte a imagem recortada para Base64 (JPG comprimido)
+    const imagemBase64 = canvas.toDataURL("image/jpeg", 0.7);
 
-    try {
-      if (!workerOCR) {
-        status.textContent = "Carregando motor de leitura (1ª vez)...";
-        workerOCR = await Tesseract.createWorker("eng");
-        await workerOCR.setParameters({
-          tessedit_char_whitelist: "0123456789",
-        });
-      }
-
-      status.textContent = "Lendo números...";
-      const resultado = await workerOCR.recognize(canvas);
-      const texto = resultado.data.text || "";
-
-      // Procura sequências numéricas (aceita números de 3 a 10 dígitos)
-      const candidatos = texto.match(/\d{3,10}/g) || [];
-
-      if (candidatos.length > 0) {
-        candidatos.sort((a, b) => b.length - a.length);
-        campoBpm.value = candidatos[0];
-        status.style.color = "#188038";
-        status.textContent = "BPM lido com sucesso! Confira abaixo.";
-      } else {
-        status.style.color = "#d93025";
-        status.textContent = "Não foi automático. Digite o número abaixo se preferir:";
-      }
-
-    } catch (erro) {
-      status.style.color = "#d93025";
-      status.textContent = "Digite o número do BPM no campo abaixo:";
-    }
+    // Envia via fetch para o Google Apps Script usando JSONP/POST simulado por URL ou requisição CORS
+    fetch(APP_URL, {
+      method: "POST",
+      mode: "no-cors", // Necessário para Apps Script web apps simples
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ imagem: imagemBase64 })
+    }).then(() => {
+      status.textContent = "Foto enviada! Se o número não aparecer abaixo, digite-o:";
+    }).catch(err => {
+      status.textContent = "Erro ao enviar foto. Digite o BPM manualmente abaixo.";
+    });
   }
 
   function confirmarOCR() {
@@ -275,7 +242,7 @@
     const bpm = campo.value.trim();
 
     if (!/^\d+$/.test(bpm)) {
-      alert("Por favor, digite ou capture um número de BPM válido.");
+      alert("Por favor, digite ou informe um número de BPM válido.");
       return;
     }
 
